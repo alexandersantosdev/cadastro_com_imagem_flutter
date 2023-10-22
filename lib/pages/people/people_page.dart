@@ -5,8 +5,8 @@ import 'package:cadastro_hive/model/person_model.dart';
 import 'package:cadastro_hive/repositories/people_repository.dart';
 import 'package:cadastro_hive/shared/text_field.dart';
 import 'package:gallery_saver/gallery_saver.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:path/path.dart';
 
 class PeoplePage extends StatefulWidget {
@@ -90,7 +90,8 @@ class _PeoplePageState extends State<PeoplePage> {
         type == "camera" ? ImageSource.camera : ImageSource.gallery;
     photo = await picker.pickImage(source: src);
     if (photo != null) {
-      await GallerySaver.saveImage(photo!.path);
+      XFile cropped = await cropImage(photo!);
+      await GallerySaver.saveImage(cropped.path);
     }
     setState(() {});
     Navigator.pop(context);
@@ -139,7 +140,7 @@ class _PeoplePageState extends State<PeoplePage> {
             actions: <Widget>[
               !isLoading
                   ? Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         TextButton(
                           style: TextButton.styleFrom(
@@ -186,6 +187,31 @@ class _PeoplePageState extends State<PeoplePage> {
             ],
           );
         });
+  }
+
+  Future cropImage(XFile imageFile) async {
+    CroppedFile? croppedFile = await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      aspectRatioPresets: [
+        CropAspectRatioPreset.square,
+        CropAspectRatioPreset.ratio3x2,
+        CropAspectRatioPreset.original,
+        CropAspectRatioPreset.ratio4x3,
+        CropAspectRatioPreset.ratio16x9
+      ],
+      uiSettings: [
+        AndroidUiSettings(
+            toolbarTitle: 'Cropper',
+            toolbarColor: Colors.deepOrange,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false),
+        IOSUiSettings(
+          title: 'Cropper',
+        )
+      ],
+    );
+    return croppedFile;
   }
 
   @override
